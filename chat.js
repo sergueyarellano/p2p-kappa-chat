@@ -95,10 +95,15 @@ const core = kappacore(databasePath, { valueEncoding: 'json' })
 core.use('chats', timestampView)
 
 // Note: the data value is in the 'value' property.
-core.api.chats.read({ limit: 50 }).on('data', (data) => {
-  log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
+core.api.chats.read({ reverse: true, limit: 50 }, function (err, msgs) {
+  if (err) throw err
+  // log to the console
+  // view.update({ nickname: 'debug', text: 'new message', timestamp: new Date().toISOString() })
+  msgs.reverse().forEach(function (data, i) {
+    log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
+    // view.update(data.value)
+  })
 })
-
 // Note: unlike multifeed, kappa-core takes the name of a view (or views)
 // ===== in its ready function. The function will fire when the view (or views)
 //       has caught up.
