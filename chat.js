@@ -145,7 +145,7 @@ function logLogo () {
   var termWidth = process.stdout.columns
   var termHeight = process.stdout.rows
   blit(screen, drawFilledBox(termWidth, termHeight), 0, 0)
-  blit(screen, [chalk.black(`P2P TribalChat 1.0 topic::${topic}`)], 2, 0)
+  blit(screen, [chalk.black('P2P TribalChat 1.0')], 2, 0)
   console.log(screen.join('\n'))
 }
 
