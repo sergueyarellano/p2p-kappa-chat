@@ -9,7 +9,7 @@ const pump = require('pump')
 const crypto = require('crypto')
 const myRL = require('serverline')
 // TOOD: https://github.com/SBoudrias/Inquirer.js#layouts
-logLogo()
+
 myRL.init()
 
 myRL.setCompletion(['help', 'command1', 'command2', 'login', 'check', 'ping'])
@@ -42,6 +42,7 @@ const slug = (s) => s.trim().toLocaleLowerCase().replace(/ /g, '-')
 const topic = argv.t
 const topicSlug = slug(topic)
 const nickname = slug(argv.n)
+logLogo()
 
 // The discovery key is a 32-byte hash based on the topic slug.
 const topicDiscoveryKey = crypto.createHash('sha256').update(topicSlug).digest()
@@ -94,7 +95,7 @@ const core = kappacore(databasePath, { valueEncoding: 'json' })
 core.use('chats', timestampView)
 
 // Note: the data value is in the 'value' property.
-core.api.chats.read().on('data', (data) => {
+core.api.chats.read({ limit: 50 }).on('data', (data) => {
   log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
 })
 
@@ -145,7 +146,7 @@ function logLogo () {
   var termWidth = process.stdout.columns
   var termHeight = process.stdout.rows
   blit(screen, drawFilledBox(termWidth, termHeight), 0, 0)
-  blit(screen, [chalk.black('P2P TribalChat 1.0')], 2, 0)
+  blit(screen, [chalk.black(`P2P TribalChat 1.0 topic::${topic}`)], 2, 0)
   console.log(screen.join('\n'))
 }
 
