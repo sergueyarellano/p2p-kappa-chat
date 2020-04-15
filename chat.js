@@ -44,6 +44,22 @@ const topicSlug = slug(topic)
 const nickname = slug(argv.n)
 logLogo()
 
+// TOOD: https://github.com/SBoudrias/Inquirer.js#layouts
+logLogo()
+myRL.init()
+
+myRL.setCompletion(['help', 'command1', 'command2', 'login', 'check', 'ping'])
+
+myRL.setPrompt(chalk.magenta(`@${argv.n}> `))
+
+// Very basic command-line argument validation
+if (!argv.t) {
+  throw new Error('Provide "-t mytopic" to command line')
+}
+if (!argv.n) {
+  throw new Error('Provide "-n nickname" to command line')
+}
+
 // The discovery key is a 32-byte hash based on the topic slug.
 const topicDiscoveryKey = crypto.createHash('sha256').update(topicSlug).digest()
 
@@ -141,7 +157,7 @@ core.ready('chats', function () {
   })
 })
 
-function logLogo () {
+function logLogo() {
   var screen = []
   var termWidth = process.stdout.columns
   var termHeight = process.stdout.rows
@@ -150,7 +166,7 @@ function logLogo () {
   console.log(screen.join('\n'))
 }
 
-function drawFilledBox (w, h) {
+function drawFilledBox(w, h) {
   const backGroundYellow = chalk.bgYellow(' ')
 
   var top = Array(w).fill(backGroundYellow).join('')
