@@ -126,6 +126,12 @@ core.ready('chats', function () {
         timestamp: new Date().toISOString()
       })
       if (myRL.isMuted()) { myRL.setMuted(false) }
+
+      switch (line) {
+        case '/help':
+          console.log('Fuck you, no help!')
+          break
+      }
     })
     // Note: it’s important to join the swarm only once
     // the local writer has been created so that when we
