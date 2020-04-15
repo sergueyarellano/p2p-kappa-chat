@@ -18,6 +18,7 @@
     "neat-input": "^1.8.0",
     "neat-log": "^3.1.0",
     "pump": "^3.0.0",
+    "serverline": "^1.4.2",
     "txt-blit": "^1.0.2"
   },
   "devDependencies": {
