@@ -1,20 +1,12 @@
-const blit = require('txt-blit')
-const chalk = require('chalk')
 const network = require('hyperswarm')
 const kappacore = require('kappa-core')
 const list = require('kappa-view-list')
 const memdb = require('memdb')
+const chalk = require('chalk')
 const argv = require('minimist')(process.argv.slice(2))
 const pump = require('pump')
 const crypto = require('crypto')
-const myRL = require('serverline')
-// TOOD: https://github.com/SBoudrias/Inquirer.js#layouts
-
-myRL.init()
-
-myRL.setCompletion(['help', 'command1', 'command2', 'login', 'check', 'ping'])
-
-myRL.setPrompt(chalk.magenta(`@${argv.n}> `))
+const { log, slug } = require('./helpers')
 
 // Very basic command-line argument validation
 if (!argv.t) {
@@ -24,17 +16,7 @@ if (!argv.n) {
   throw new Error('Provide "-n nickname" to command line')
 }
 
-// Helpers.
-// ========
-
-// Returns a formatted time stamp from the passed date (or the current date)
-const formattedDate = (date = new Date()) => `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA')}`
-
-// Log to console with a timestamp prefix.
-const log = (msg, date = new Date()) => console.log(`${formattedDate(date)}: ${msg}`)
-
-// “Sluggifies” the passed string: removes spaces and replaces inter-word spaces with dashes.
-const slug = (s) => s.trim().toLocaleLowerCase().replace(/ /g, '-')
+const ui = require('./ui')() // Let's start the ui first
 
 // Constants.
 // ==========
@@ -42,23 +24,9 @@ const slug = (s) => s.trim().toLocaleLowerCase().replace(/ /g, '-')
 const topic = argv.t
 const topicSlug = slug(topic)
 const nickname = slug(argv.n)
-logLogo()
 
 // The discovery key is a 32-byte hash based on the topic slug.
 const topicDiscoveryKey = crypto.createHash('sha256').update(topicSlug).digest()
-
-// Views.
-// ======
-
-// A list of messages, lexographically ordered by timestamp.
-const timestampView = list(memdb(), (msg, next) => {
-  if (msg.value.timestamp && typeof msg.value.timestamp === 'string') {
-    // Ask to sort on the timestamp field.
-    next(null, [msg.value.timestamp])
-  } else {
-    next()
-  }
-})
 
 // Discovery and replication.
 // ==========================
@@ -82,13 +50,25 @@ swarm.on('connection', (socket, details) => {
   log(`📜 Count: ${core.feeds().length}`)
 
   // Start replicating the core with the newly-discovered socket.
+  // Live option maintains stream open awaiting for new info from socket
   pump(socket, core.replicate(details.client, { live: true }), socket)
+})
+
+// Views.
+// ======
+
+// A list of messages, lexographically ordered by timestamp.
+const timestampView = list(memdb(), function (msg, next) {
+  if (!msg.value.timestamp) return next()
+  next(null, [msg.value.timestamp])
 })
 
 // Kappa Core.
 // ===========
 
-// Set up kappa-core.
+// Set up kappa-core. This is a database based on logs
+// Kappa core retrieves every feed replicated in your machine and generates a view.
+// We are sorting that view by timestamp
 const databasePath = `./multi-chat-${topicSlug}-${nickname}`
 const core = kappacore(databasePath, { valueEncoding: 'json' })
 
@@ -108,36 +88,25 @@ core.api.chats.read({ reverse: true, limit: 50 }, function (err, msgs) {
 // ===== in its ready function. The function will fire when the view (or views)
 //       has caught up.
 core.ready('chats', function () {
-  // log('Chats view is ready.')
-
   // For any newly-received messages, show them as they arrive.
   // Note: Here, data is returned as an array of objects.
   core.api.chats.tail(1, (data) => {
     const feedNickname = data[0].value.nickname
+    // When local user enters a message we don't want to show that message twice: prompt and formatted log
+    // for ui we are using "serverline", it leaves "last prompt" on the screen already.
+    // Just check here if the local nickname used is the same as the feed.
+    // That way we now it is comming from local feed and then we will not display anything
     nickname !== feedNickname && log(`💬 ${chalk.green(data[0].value.nickname)}: ${data[0].value.text}`, new Date(data[0].value.timestamp))
   })
 
   core.writer('local', (err, feed) => {
     if (err) throw err
+    log('Local feed is ready.')
 
-    // log('Local feed is ready.')
+    // When we press enter, serverline will handle the process.stdin.
+    // we catch the event, format the line and log it
+    ui.appendOnEnter(feed)
 
-    // You can do something with an individual feed here.
-    myRL.on('line', function (line) {
-      line.length > 0 && feed.append({
-        type: 'chat-message',
-        nickname: nickname,
-        text: line,
-        timestamp: new Date().toISOString()
-      })
-      if (myRL.isMuted()) { myRL.setMuted(false) }
-
-      switch (line) {
-        case '/help':
-          console.log('Fuck you, no help!')
-          break
-      }
-    })
     // Note: it’s important to join the swarm only once
     // the local writer has been created so that when we
     // get the 'connection' event on the swarm, our local
@@ -151,20 +120,3 @@ core.ready('chats', function () {
     })
   })
 })
-
-function logLogo () {
-  var screen = []
-  var termWidth = process.stdout.columns
-  var termHeight = process.stdout.rows
-  blit(screen, drawFilledBox(termWidth, termHeight), 0, 0)
-  blit(screen, [chalk.black(`P2P TribalChat 1.0 topic::${topic}`)], 2, 0)
-  console.log(screen.join('\n'))
-}
-
-function drawFilledBox (w, h) {
-  const backGroundYellow = chalk.bgYellow(' ')
-
-  var top = Array(w).fill(backGroundYellow).join('')
-
-  return [top]
-}
