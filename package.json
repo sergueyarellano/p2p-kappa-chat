@@ -2,6 +2,9 @@
   "name": "p2p-kappa-chat",
   "description": "PxP. P2P kappa core based chat for pirates",
   "license": "MIT",
+  "scripts": {
+    "test": "node *.test.js | faucet"
+  },
   "dependencies": {
     "chalk": "^2.4.2",
     "hypercore": "^6.20.2",
@@ -21,6 +24,8 @@
     "txt-blit": "^1.0.2"
   },
   "devDependencies": {
-    "standard": "^14.3.3"
+    "faucet": "0.0.1",
+    "standard": "^14.3.3",
+    "tape": "^4.13.2"
   }
 }

@@ -15,7 +15,7 @@ function log (msg, date = new Date()) {
 
 function slug (s) {
   // “Sluggifies” the passed string: removes spaces and replaces inter-word spaces with dashes.
-  return s.trim().toLocaleLowerCase().replace(/ /g, '-')
+  return s.trim().toLocaleLowerCase().replace(/\s/g, '-')
 }
 
 function getIPV4FromIPV6 (ipv6) {
