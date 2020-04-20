@@ -2,11 +2,12 @@ const sl = require('serverline')
 const chalk = require('chalk')
 const blit = require('txt-blit')
 const argv = require('minimist')(process.argv.slice(2))
+const store = require('./store')
 
 module.exports = init
 
 function init () {
-  logLogo()
+  // logLogo()
   sl.init()
   sl.setCompletion(['help', 'command1', 'command2', 'login', 'check', 'ping'])
   sl.setPrompt(chalk.magenta(`@${argv.n}> `))
@@ -19,18 +20,25 @@ function init () {
 function appendOnEnter (sl) {
   return (feed) => {
     sl.on('line', function (line) {
-      line.length > 0 && feed.append({
+      // If it is not a command, append the line to local hypercore
+      /^[^/]/.test(line) && line.length > 0 && feed.append({
         type: 'chat-message',
         nickname: argv.n,
         text: line,
         timestamp: new Date().toISOString()
       })
-      if (sl.isMuted()) { sl.setMuted(false) }
+
+      // if (sl.isMuted()) { sl.setMuted(false) }
 
       switch (line) {
         case '/help':
           console.log('Fuck you, no help!')
           break
+        case '/connected': {
+          const users = store.get('users')
+          users.forEach(user => console.log(`${user.nickname}@${user.host}:${user.port} ${user.local ? 'LAN' : 'WAN'}`))
+          break
+        }
       }
     })
   }
