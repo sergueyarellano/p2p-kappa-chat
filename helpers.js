@@ -19,5 +19,6 @@ function slug (s) {
 }
 
 function getIPV4FromIPV6 (ipv6) {
-  return ipv6.match(/.*:(.*)/)[1]
+  const ip = ipv6.match(/.*:(.*)/)
+  return ip ? ipv6.match(/.*:(.*)/)[1] : ipv6
 }
